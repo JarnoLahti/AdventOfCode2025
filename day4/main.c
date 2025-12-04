@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 int increment_if_roll(const char * buff, int idx, int * rolls);
 
@@ -65,38 +66,33 @@ int first(FILE * fp){
       //we have moved past first row and can start checking the top row 
       //top left
       if(i % cols != 0){
-        //increment_if_roll(buffer, i - cols - 1, &rolls_around);  
         if(increment_if_roll(buffer, i - cols - 1, &rolls_around) == 1){
-         printf("top left at idx %d\n", i);
+         //printf("top left at idx %d\n", i);
         }
       }
       //top right
       if(i % cols < cols - 1){
-        //increment_if_roll(buffer, i - cols + 1, &rolls_around);  
         if(increment_if_roll(buffer, i - cols + 1, &rolls_around) == 1){
-         printf("top right at idx %d\n", i);
+         //printf("top right at idx %d\n", i);
         }
       }
       //top middle is available always after first row
-      //increment_if_roll(buffer, i - cols, &rolls_around);
       if(increment_if_roll(buffer, i - cols, &rolls_around) == 1){
-        printf("top at idx %d\n", i);
+        //printf("top at idx %d\n", i);
       }
     }
     
     //left
     if(i % cols != 0){
-      //increment_if_roll(buffer, i - 1, &rolls_around);  
       if(increment_if_roll(buffer, i - 1, &rolls_around) == 1){
-        printf("left at idx %d\n", i);
+        //printf("left at idx %d\n", i);
       }
     }
     
     //right
     if(i % cols < cols - 1){
-      //increment_if_roll(buffer, i + 1, &rolls_around);  
       if(increment_if_roll(buffer, i + 1, &rolls_around) == 1){
-        printf("right at idx %d\n", i);
+        //printf("right at idx %d\n", i);
       }
     }
     
@@ -104,21 +100,19 @@ int first(FILE * fp){
     if(i < last_row){
       //bottom left
       if(i % cols != 0){
-        //increment_if_roll(buffer, i + cols - 1, &rolls_around);  
         if(increment_if_roll(buffer, i + cols - 1, &rolls_around) == 1){
-          printf("bottom left at idx %d\n", i);
+          //printf("bottom left at idx %d\n", i);
         }
       }
       //bottom right
       if(i % cols < cols - 1){
-        //increment_if_roll(buffer, i + cols + 1, &rolls_around);  
         if(increment_if_roll(buffer, i + cols + 1, &rolls_around) == 1){
-          printf("bottom right at idx %d\n", i);
+          //printf("bottom right at idx %d\n", i);
         }
       }
       //bottom middle is available always before last row
       if(increment_if_roll(buffer, i + cols, &rolls_around) == 1){
-        printf("bottom middle at idx %d\n", i);
+        //printf("bottom middle at idx %d\n", i);
       }
     }
     //printf("%d rolls around idx %d\n", rolls_around, i);
@@ -140,6 +134,170 @@ int increment_if_roll(const char * buff, int idx, int *rolls){
     return 1;
   }
   return 0;
+}
+
+int second(FILE * fp){
+  char * line = NULL;
+  size_t len = 0;
+  ssize_t read;
+  
+  //determinate file size
+  fseek(fp, 0, SEEK_END);
+  long file_size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  
+  char *even_buffer = malloc(file_size + 1);
+  char *temp_buffer = malloc(file_size + 1); 
+  char *odd_buffer = malloc(file_size + 1);
+  if(even_buffer == NULL || odd_buffer == NULL || temp_buffer == NULL){
+    free(even_buffer);
+    free(temp_buffer);
+    free(odd_buffer);
+    perror("failed to malloc even_buffers");
+    return 0;
+  }
+  
+  //get row and col count
+  int cols = 0;
+  int rows = 1;
+
+  int cols_read_done = 0;
+  fread(temp_buffer, 1, file_size, fp);
+  
+  int buff_len = 0;
+  for (int i = 0; i < file_size; i++) {
+    if(temp_buffer[i] == '\n'){
+      rows++; 
+      //after first row we are done with cols a.k.a char count
+      cols_read_done = 1;
+    }
+    
+    if(cols_read_done != 1){
+      cols++; 
+    } 
+    
+    if(temp_buffer[i] != '\n'){
+      even_buffer[buff_len] = temp_buffer[i];
+      odd_buffer[buff_len] = temp_buffer[i];
+      buff_len++;
+    }
+  }
+  free(temp_buffer);
+  //remember null termination! 
+  even_buffer[buff_len] = '\0';
+  odd_buffer[buff_len] = '\0';
+  //process
+  int answer = 0;
+  int rolls_around = 0;
+  int last_row = cols * (rows - 1);
+  char * curr_buffer = even_buffer;
+  char * backup_buffer = odd_buffer;
+  int round = 0; 
+  int at_least_one_roll_removed = 1;
+
+  while(at_least_one_roll_removed == 1){
+    at_least_one_roll_removed = 0; 
+
+    for (int i = 0; i < buff_len; i++) {
+    //no need to check surroundings if not a roll
+      if(curr_buffer[i] != '@'){
+        backup_buffer[i] = curr_buffer[i];
+        continue;
+      }
+
+      //check top
+      if(i >= cols){
+        //we have moved past first row and can start checking the top row 
+        //top left
+        if(i % cols != 0){
+          //increment_if_roll(curr_buffer, i - cols - 1, &rolls_around);  
+          if(increment_if_roll(curr_buffer, i - cols - 1, &rolls_around) == 1){
+           //printf("top left at idx %d\n", i);
+          }
+        }
+        //top right
+        if(i % cols < cols - 1){
+          //increment_if_roll(curr_buffer, i - cols + 1, &rolls_around);  
+          if(increment_if_roll(curr_buffer, i - cols + 1, &rolls_around) == 1){
+           //printf("top right at idx %d\n", i);
+          }
+        }
+        //top middle is available always after first row
+        //increment_if_roll(curr_buffer, i - cols, &rolls_around);
+        if(increment_if_roll(curr_buffer, i - cols, &rolls_around) == 1){
+          //printf("top at idx %d\n", i);
+        }
+      }
+      
+      //left
+      if(i % cols != 0){
+        //increment_if_roll(curr_buffer, i - 1, &rolls_around);  
+        if(increment_if_roll(curr_buffer, i - 1, &rolls_around) == 1){
+          //printf("left at idx %d\n", i);
+        }
+      }
+      
+      //right
+      if(i % cols < cols - 1){
+        //increment_if_roll(curr_buffer, i + 1, &rolls_around);  
+        if(increment_if_roll(curr_buffer, i + 1, &rolls_around) == 1){
+          //printf("right at idx %d\n", i);
+        }
+      }
+      
+      //bottom
+      if(i < last_row){
+        //bottom left
+        if(i % cols != 0){
+          //increment_if_roll(curr_buffer, i + cols - 1, &rolls_around);  
+          if(increment_if_roll(curr_buffer, i + cols - 1, &rolls_around) == 1){
+            //printf("bottom left at idx %d\n", i);
+          }
+        }
+        //bottom right
+        if(i % cols < cols - 1){
+          //increment_if_roll(curr_buffer, i + cols + 1, &rolls_around);  
+          if(increment_if_roll(curr_buffer, i + cols + 1, &rolls_around) == 1){
+            //printf("bottom right at idx %d\n", i);
+          }
+        }
+        //bottom middle is available always before last row
+        if(increment_if_roll(curr_buffer, i + cols, &rolls_around) == 1){
+          //printf("bottom middle at idx %d\n", i);
+        }
+      }
+      //printf("%d rolls around idx %d\n", rolls_around, i);
+      if (rolls_around < 4) {
+        answer++;
+        at_least_one_roll_removed = 1;
+        //remove from next round
+        backup_buffer[i] = '.';
+      }else{
+        backup_buffer[i] = curr_buffer[i];    
+      }
+      rolls_around = 0;
+    }
+
+    round++;
+    if(round % 2 == 0){
+      curr_buffer = even_buffer;    
+      backup_buffer = odd_buffer;    
+    } else {
+      curr_buffer = odd_buffer;    
+      backup_buffer = even_buffer;    
+    }
+   // for (int i = 0; i < buff_len; i++) {
+   //   if(i % cols == 0){
+   //     printf("\n");  
+   //   }
+   //   printf("%c", even_buffer[i]);
+   // }
+   // printf("\n");  
+  }
+  //printf("%s\n", even_buffer);
+  //printf("cols: %d || rows: %d\n", cols, rows);
+  free(even_buffer); 
+  return answer;
 }
 
 int main(int argc, char *argv[])
@@ -165,8 +323,8 @@ int main(int argc, char *argv[])
   int first_part_answer=first(fp); 
   printf("\nfirst_part_answer: %d\n", first_part_answer);
   rewind(fp);
-  //unsigned long long second_part_answer = first(fp);
-  //printf("\nsecond_part_answer: %llu\n", second_part_answer);
+  int second_part_answer = second(fp);
+  printf("\nsecond_part_answer: %d\n", second_part_answer);
   fclose(fp);
   return 0;
 }
